@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moliya — Aiman</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#FDF0F4;min-height:100vh;padding:0 0 3rem}
+.topbar{background:#4B1528;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
+.back-btn{background:rgba(255,255,255,.1);border:0.5px solid rgba(255,255,255,.2);border-radius:8px;padding:.35rem .75rem;color:#fff;text-decoration:none;font-size:13px;display:flex;align-items:center;gap:5px;transition:.15s}
+.back-btn:hover{background:rgba(255,255,255,.18)}
+.topbar-title{font-size:16px;font-weight:500;color:#fff}
+.page{max-width:480px;margin:0 auto;padding:1.25rem}
+.summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.25rem}
+.sum-card{background:#fff;border:0.5px solid #FBEAF0;border-radius:14px;padding:14px 10px;text-align:center}
+.sum-val{font-size:13px;font-weight:500;margin:0;line-height:1.3;word-break:break-all}
+.sum-val.pink{color:#993556}.sum-val.red{color:#b91c1c}.sum-val.dark{color:#4B1528}
+.sum-label{font-size:11px;color:#D4537E;margin:4px 0 0}
+.savings-card{background:#4B1528;border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.sblob1{position:absolute;right:-20px;bottom:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none}
+.sblob2{position:absolute;right:40px;top:-30px;width:70px;height:70px;border-radius:50%;background:rgba(237,147,177,.12);pointer-events:none}
+.sav-label{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.sav-amount{font-size:28px;font-weight:500;color:#fff;margin-bottom:.25rem;word-break:break-all}
+.sav-sub{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:1rem}
+.sav-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sav-col-label{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:4px}
+.sav-row{display:flex;gap:6px}
+.sav-input{flex:1;padding:.5rem .75rem;border:0.5px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%}
+.sav-input::placeholder{color:rgba(255,255,255,.35)}
+.sav-input:focus{border-color:rgba(255,255,255,.45)}
+.sav-btn{padding:.5rem .85rem;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:.15s}
+.sav-btn.add{background:#ED93B1;color:#4B1528}.sav-btn.add:hover{background:#D4537E;color:#fff}
+.sav-btn.rem{background:rgba(185,28,28,.6);color:#fff}.sav-btn.rem:hover{background:#b91c1c}
+.sav-hist{margin-top:.85rem;border-top:0.5px solid rgba(255,255,255,.1);padding-top:.75rem}
+.sav-hist-title{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem}
+.sav-entry{display:flex;justify-content:space-between;padding:.28rem 0;font-size:12px;border-bottom:0.5px solid rgba(255,255,255,.06)}
+.sav-entry:last-child{border-bottom:none}
+.sav-entry-desc{color:rgba(255,255,255,.6)}
+.sav-entry-amt.plus{color:#ED93B1}.sav-entry-amt.minus{color:#ff8a8a}
+.sav-empty{font-size:12px;color:rgba(255,255,255,.3);text-align:center;padding:.5rem 0}
+.card{background:#fff;border:0.5px solid #FBEAF0;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:500;color:#4B1528;margin-bottom:1rem}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;border:0.5px solid #F4C0D1;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.type-btn{padding:.6rem;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:#FDF0F4;color:#D4537E;border:none;font-family:'DM Sans',sans-serif;transition:.15s}
+.type-btn.active.income{background:#FBEAF0;color:#72243E;font-weight:600}
+.type-btn.active.expense{background:#fef2f2;color:#b91c1c;font-weight:600}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-full{margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+label{font-size:12px;color:#D4537E;font-weight:500}
+input,select{width:100%;padding:.6rem .85rem;border:0.5px solid #F4C0D1;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:#4B1528;background:#FDF0F4;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:#D4537E;background:#fff}
+.add-btn{width:100%;padding:.75rem;background:#4B1528;color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-top:.5rem;transition:.15s}
+.add-btn:hover{background:#72243E}.add-btn:disabled{opacity:.6;cursor:default}
+.section-label{font-size:12px;color:#D4537E;letter-spacing:.06em;text-transform:uppercase;margin:1.25rem 0 .6rem;font-weight:500}
+.entries{display:flex;flex-direction:column;gap:8px}
+.entry{background:#fff;border:0.5px solid #FBEAF0;border-radius:12px;padding:.9rem 1.1rem;display:flex;align-items:center;gap:12px}
+.entry-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.entry-dot.income{background:#ED93B1}.entry-dot.expense{background:#b91c1c}
+.entry-info{flex:1;min-width:0}
+.entry-desc{font-size:14px;font-weight:500;color:#4B1528;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-meta{font-size:12px;color:#D4537E;margin-top:1px}
+.entry-amount{font-size:14px;font-weight:500;flex-shrink:0;white-space:nowrap}
+.entry-amount.income{color:#993556}.entry-amount.expense{color:#b91c1c}
+.del-btn{background:none;border:none;cursor:pointer;color:#F4C0D1;font-size:16px;padding:0 0 0 6px;transition:color .15s;flex-shrink:0}
+.del-btn:hover{color:#b91c1c}
+.empty{text-align:center;padding:2rem;color:#D4537E;font-size:14px;opacity:.6}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#4B1528;color:#fff;padding:.6rem 1.4rem;border-radius:50px;font-size:13px;font-weight:500;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:#993556}.toast.error{background:#b91c1c}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html" class="back-btn">← Orqaga</a>
+  <span class="topbar-title">💰 Moliya</span>
+</div>
+<div class="page">
+  <div class="summary">
+    <div class="sum-card"><p class="sum-val pink" id="total-income">—</p><p class="sum-label">Daromad (soʻm)</p></div>
+    <div class="sum-card"><p class="sum-val red" id="total-expense">—</p><p class="sum-label">Xarajat (soʻm)</p></div>
+    <div class="sum-card"><p class="sum-val dark" id="balance">—</p><p class="sum-label">Balans (soʻm)</p></div>
+  </div>
+  <div class="savings-card">
+    <div class="sblob1"></div><div class="sblob2"></div>
+    <div class="sav-label">🏦 Jamg'arma</div>
+    <div class="sav-amount" id="sav-amount">0</div>
+    <div class="sav-sub">soʻm jamg'arilgan</div>
+    <div class="sav-actions">
+      <div>
+        <div class="sav-col-label">Qo'shish</div>
+        <div class="sav-row"><input class="sav-input" type="number" id="sav-add" placeholder="Miqdor"><button class="sav-btn add" onclick="savAdd()">+</button></div>
+      </div>
+      <div>
+        <div class="sav-col-label">Olish</div>
+        <div class="sav-row"><input class="sav-input" type="number" id="sav-rem" placeholder="Miqdor"><button class="sav-btn rem" onclick="savRem()">−</button></div>
+      </div>
+    </div>
+    <div class="sav-hist">
+      <div class="sav-hist-title">So'nggi amallar</div>
+      <div id="sav-hist-list"></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">Yangi yozuv</p>
+    <div class="type-toggle">
+      <button class="type-btn active income" id="btn-income" onclick="setType('income')">+ Daromad</button>
+      <button class="type-btn expense" id="btn-expense" onclick="setType('expense')">− Xarajat</button>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Miqdor (soʻm)</label><input type="number" id="f-amount" placeholder="0" min="0"></div>
+      <div class="field"><label>Kategoriya</label>
+        <select id="f-cat">
+          <option value="ovqat">🍽 Ovqat</option>
+          <option value="transport">🚌 Transport</option>
+          <option value="ta'lim">📚 Ta'lim</option>
+          <option value="xarid">🛍 Xarid</option>
+          <option value="salomatlik">❤️ Salomatlik</option>
+          <option value="maosh">💼 Maosh</option>
+          <option value="go'zallik">💄 Go'zallik</option>
+          <option value="boshqa">📌 Boshqa</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-full"><div class="field"><label>Izoh</label><input type="text" id="f-desc" placeholder="Nima uchun?"></div></div>
+    <div class="form-full"><div class="field"><label>Sana</label><input type="date" id="f-date"></div></div>
+    <button class="add-btn" id="add-btn" onclick="addEntry()">Qo'shish</button>
+  </div>
+  <p class="section-label">Barcha yozuvlar</p>
+  <div class="entries" id="entries-list"><div class="empty">Yuklanmoqda...</div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SB_URL='https://wpireudvgdzzxrehwmvh.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwaXJldWR2Z2R6enhyZWh3bXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNjc0MDQsImV4cCI6MjA5NDg0MzQwNH0.GmqFUj3cuYHxlI_jvf1LjilS_mDVxEUeZxzZI-wDEBs';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const UID='aiman';
+let currentType='income';
+let sav=JSON.parse(localStorage.getItem('aiman_savings')||'{"balance":0,"history":[]}');
+document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+function setType(t){currentType=t;document.getElementById('btn-income').className='type-btn income'+(t==='income'?' active':'');document.getElementById('btn-expense').className='type-btn expense'+(t==='expense'?' active':'')}
+function showToast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(type?' '+type:'');setTimeout(()=>el.className='toast',2500)}
+function fmt(n){return Number(n).toLocaleString('uz-UZ')}
+function saveSav(){localStorage.setItem('aiman_savings',JSON.stringify(sav));renderSav()}
+function savAdd(){const a=parseInt(document.getElementById('sav-add').value);if(!a||a<=0){showToast('Miqdor kiriting','error');return}sav.balance+=a;sav.history.unshift({type:'add',amount:a,date:new Date().toISOString().slice(0,10)});if(sav.history.length>10)sav.history=sav.history.slice(0,10);document.getElementById('sav-add').value='';saveSav();showToast('+'+fmt(a)+' soʻm qo\'shildi ✓','success')}
+function savRem(){const a=parseInt(document.getElementById('sav-rem').value);if(!a||a<=0){showToast('Miqdor kiriting','error');return}if(a>sav.balance){showToast('Yetarli jamg\'arma yo\'q','error');return}sav.balance-=a;sav.history.unshift({type:'rem',amount:a,date:new Date().toISOString().slice(0,10)});if(sav.history.length>10)sav.history=sav.history.slice(0,10);document.getElementById('sav-rem').value='';saveSav();showToast('-'+fmt(a)+' soʻm olindi','success')}
+function renderSav(){document.getElementById('sav-amount').textContent=fmt(sav.balance);const h=document.getElementById('sav-hist-list');if(!sav.history.length){h.innerHTML='<div class="sav-empty">Hali amallar yo\'q</div>';return}h.innerHTML=sav.history.map(e=>`<div class="sav-entry"><span class="sav-entry-desc">${e.type==='add'?'Qo\'shildi':'Olindi'} · ${e.date}</span><span class="sav-entry-amt ${e.type==='add'?'plus':'minus'}">${e.type==='add'?'+':'-'}${fmt(e.amount)} soʻm</span></div>`).join('')}
+async function addEntry(){
+  const amount=parseInt(document.getElementById('f-amount').value);
+  const desc=document.getElementById('f-desc').value.trim();
+  const cat=document.getElementById('f-cat').value;
+  const date=document.getElementById('f-date').value;
+  if(!amount||amount<=0){showToast('Miqdor kiriting','error');return}
+  if(!desc){showToast('Izoh kiriting','error');return}
+  const btn=document.getElementById('add-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Saqlanmoqda…';
+  const{error}=await sb.from('aiman_finances').insert([{user_id:UID,type:currentType,amount,category:cat,description:desc,date}]);
+  btn.disabled=false;btn.textContent='Qo\'shish';
+  if(error){showToast('Xato: '+error.message,'error');return}
+  showToast(currentType==='income'?'Daromad qo\'shildi ✓':'Xarajat qo\'shildi ✓','success');
+  document.getElementById('f-amount').value='';document.getElementById('f-desc').value='';
+  loadEntries();
+}
+async function deleteEntry(id){if(!confirm('Bu yozuvni o\'chirish?'))return;await sb.from('aiman_finances').delete().eq('id',id);loadEntries()}
+async function loadEntries(){
+  const{data,error}=await sb.from('aiman_finances').select('*').eq('user_id',UID).order('date',{ascending:false}).order('created_at',{ascending:false});
+  if(error){document.getElementById('entries-list').innerHTML='<div class="empty">Yuklab bo\'lmadi.</div>';return}
+  const entries=data||[];
+  const income=entries.filter(e=>e.type==='income').reduce((s,e)=>s+Number(e.amount),0);
+  const expense=entries.filter(e=>e.type==='expense').reduce((s,e)=>s+Number(e.amount),0);
+  const bal=income-expense;
+  document.getElementById('total-income').textContent=fmt(income);
+  document.getElementById('total-expense').textContent=fmt(expense);
+  const balEl=document.getElementById('balance');balEl.textContent=fmt(Math.abs(bal));balEl.className='sum-val '+(bal>=0?'pink':'red');
+  const list=document.getElementById('entries-list');
+  if(!entries.length){list.innerHTML='<div class="empty">Hali yozuvlar yo\'q.</div>';return}
+  const catEmoji={ovqat:'🍽',transport:'🚌',"ta'lim":'📚',xarid:'🛍',salomatlik:'❤️',maosh:'💼',"go'zallik":'💄',boshqa:'📌'};
+  list.innerHTML=entries.map(e=>`<div class="entry"><div class="entry-dot ${e.type}"></div><div class="entry-info"><div class="entry-desc">${catEmoji[e.category]||'📌'} ${e.description}</div><div class="entry-meta">${e.category} · ${e.date}</div></div><span class="entry-amount ${e.type}">${e.type==='income'?'+':'-'}${fmt(e.amount)} soʻm</span><button class="del-btn" onclick="deleteEntry('${e.id}')">✕</button></div>`).join('');
+}
+renderSav();loadEntries();
+</script>
+</body>
+</html>
