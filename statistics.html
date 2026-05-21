@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistika — Aiman</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#FDF0F4;min-height:100vh;padding:0 0 3rem}
+.topbar{background:#4B1528;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
+.back-btn{background:rgba(255,255,255,.1);border:0.5px solid rgba(255,255,255,.2);border-radius:8px;padding:.35rem .75rem;color:#fff;text-decoration:none;font-size:13px;transition:.15s}
+.back-btn:hover{background:rgba(255,255,255,.18)}
+.topbar-title{font-size:16px;font-weight:500;color:#fff}
+.page{max-width:520px;margin:0 auto;padding:1.25rem}
+.period-row{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.period-btn{background:#fff;border:0.5px solid #F4C0D1;border-radius:50px;padding:.3rem .9rem;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;color:#D4537E;transition:.15s}
+.period-btn.active{background:#4B1528;color:#fff;border-color:#4B1528}
+.big-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem}
+.big-card{background:#fff;border:0.5px solid #FBEAF0;border-radius:16px;padding:1.1rem 1.25rem}
+.big-card-label{font-size:12px;color:#D4537E;margin-bottom:6px}
+.big-card-val{font-size:18px;font-weight:500;line-height:1.3;word-break:break-all}
+.big-card-sub{font-size:11px;color:#F4C0D1;margin-top:4px}
+.big-card.rose .big-card-val{color:#993556}.big-card.red .big-card-val{color:#b91c1c}
+.big-card.purple .big-card-val{color:#534AB7}.big-card.pink .big-card-val{color:#D4537E}
+.chart-card{background:#fff;border:0.5px solid #FBEAF0;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.chart-card-title{font-size:14px;font-weight:500;color:#4B1528;margin-bottom:1rem}
+.chart-wrap{position:relative;height:200px}
+.cat-row{display:flex;align-items:center;gap:10px;margin-bottom:.65rem}
+.cat-label{font-size:13px;color:#4B1528;min-width:90px;flex-shrink:0}
+.cat-bar-wrap{flex:1;background:#FBEAF0;border-radius:50px;height:7px;overflow:hidden}
+.cat-bar{height:100%;border-radius:50px;background:#D4537E;transition:width .5s}
+.cat-val{font-size:12px;color:#D4537E;min-width:100px;text-align:right;white-space:nowrap}
+.history-card{background:#fff;border:0.5px solid #FBEAF0;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.tab-row{display:flex;gap:6px;margin-bottom:.85rem}
+.tab-btn{background:#FDF0F4;border:none;border-radius:8px;padding:.35rem .85rem;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;color:#D4537E;transition:.15s}
+.tab-btn.active{background:#4B1528;color:#fff}
+.hist-entry{display:flex;align-items:center;gap:10px;padding:.6rem 0;border-bottom:0.5px solid #FBEAF0}
+.hist-entry:last-child{border-bottom:none}
+.hist-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.hist-dot.income{background:#ED93B1}.hist-dot.expense{background:#b91c1c}
+.hist-dot.done{background:#3B6D11}.hist-dot.pending{background:#c9922a}
+.hist-info{flex:1;min-width:0}
+.hist-title{font-size:13px;font-weight:500;color:#4B1528;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:11px;color:#D4537E;margin-top:1px;opacity:.7}
+.hist-right{font-size:13px;font-weight:500;flex-shrink:0;white-space:nowrap}
+.hist-right.income{color:#993556}.hist-right.expense{color:#b91c1c}
+.hist-right.done{color:#3B6D11}.hist-right.pending{color:#c9922a}
+.empty{text-align:center;padding:1.5rem;color:#D4537E;font-size:13px;opacity:.6}
+.section-label{font-size:12px;color:#D4537E;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html" class="back-btn">← Orqaga</a>
+  <span class="topbar-title">📊 Statistika</span>
+</div>
+<div class="page">
+  <div class="period-row">
+    <button class="period-btn active" onclick="setPeriod('week',this)">Bu hafta</button>
+    <button class="period-btn" onclick="setPeriod('month',this)">Bu oy</button>
+    <button class="period-btn" onclick="setPeriod('all',this)">Hammasi</button>
+  </div>
+  <div class="big-stats">
+    <div class="big-card rose"><p class="big-card-label">Jami daromad</p><p class="big-card-val" id="bs-income">—</p><p class="big-card-sub">soʻm</p></div>
+    <div class="big-card red"><p class="big-card-label">Jami xarajat</p><p class="big-card-val" id="bs-expense">—</p><p class="big-card-sub">soʻm</p></div>
+    <div class="big-card purple"><p class="big-card-label">O'quv vazifalari</p><p class="big-card-val" id="bs-study">—</p><p class="big-card-sub">bajarildi</p></div>
+    <div class="big-card pink"><p class="big-card-label">Shaxsiy vazifalar</p><p class="big-card-val" id="bs-tasks">—</p><p class="big-card-sub">bajarildi</p></div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">Kunlik xarajatlar — so'nggi 7 kun (soʻm)</p>
+    <div class="chart-wrap"><canvas id="spending-chart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">Kategoriyalar bo'yicha xarajat</p>
+    <div id="cat-breakdown"><div class="empty">Ma'lumot yo'q.</div></div>
+  </div>
+  <div class="chart-card">
+    <p class="chart-card-title">Vazifalar holati</p>
+    <div class="chart-wrap"><canvas id="tasks-chart"></canvas></div>
+  </div>
+  <div class="history-card">
+    <p class="section-label">To'liq tarix</p>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="setTab('finance',this)">Moliya</button>
+      <button class="tab-btn" onclick="setTab('study',this)">O'quv</button>
+      <button class="tab-btn" onclick="setTab('tasks',this)">Vazifalar</button>
+    </div>
+    <div id="hist-list"><div class="empty">Yuklanmoqda...</div></div>
+  </div>
+</div>
+<script>
+const SB_URL='https://wpireudvgdzzxrehwmvh.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwaXJldWR2Z2R6enhyZWh3bXZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNjc0MDQsImV4cCI6MjA5NDg0MzQwNH0.GmqFUj3cuYHxlI_jvf1LjilS_mDVxEUeZxzZI-wDEBs';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const UID='aiman';
+let period='week',tab='finance',spChart=null,tChart=null;
+const fmt=n=>Number(n).toLocaleString('uz-UZ');
+function setPeriod(p,btn){period=p;document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAll()}
+function setTab(t,btn){tab=t;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHistory()}
+function sinceDate(){const now=new Date();if(period==='week'){const d=new Date(now);d.setDate(now.getDate()-6);return d.toISOString().slice(0,10)}if(period==='month')return new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10);return'2000-01-01'}
+async function renderAll(){
+  const since=sinceDate();
+  const[finRes,studyRes,tasksRes]=await Promise.all([
+    sb.from('aiman_finances').select('*').eq('user_id',UID).gte('date',since),
+    sb.from('aiman_study_tasks').select('*').eq('user_id',UID),
+    sb.from('aiman_personal_tasks').select('*').eq('user_id',UID)
+  ]);
+  const fin=finRes.data||[],study=studyRes.data||[],tasks=tasksRes.data||[];
+  const income=fin.filter(e=>e.type==='income').reduce((s,e)=>s+Number(e.amount),0);
+  const expense=fin.filter(e=>e.type==='expense').reduce((s,e)=>s+Number(e.amount),0);
+  document.getElementById('bs-income').textContent=fmt(income);
+  document.getElementById('bs-expense').textContent=fmt(expense);
+  document.getElementById('bs-study').textContent=study.filter(t=>t.done).length;
+  document.getElementById('bs-tasks').textContent=tasks.filter(t=>t.done).length;
+  renderSpendingChart(fin);renderCatBreakdown(fin);renderTasksChart(study,tasks);renderHistory();
+}
+function renderSpendingChart(fin){
+  const now=new Date(),days=[],labels=[];
+  for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);const s=d.toISOString().slice(0,10);days.push(s);labels.push(s.slice(5))}
+  const expData=days.map(d=>fin.filter(e=>e.type==='expense'&&e.date===d).reduce((s,e)=>s+Number(e.amount),0));
+  const incData=days.map(d=>fin.filter(e=>e.type==='income'&&e.date===d).reduce((s,e)=>s+Number(e.amount),0));
+  if(spChart)spChart.destroy();
+  spChart=new Chart(document.getElementById('spending-chart').getContext('2d'),{type:'bar',data:{labels,datasets:[{label:'Daromad',data:incData,backgroundColor:'rgba(237,147,177,0.7)',borderRadius:5},{label:'Xarajat',data:expData,backgroundColor:'rgba(185,28,28,0.55)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans',size:12},boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{family:'DM Sans',size:11},callback:v=>v>0?fmt(v):'0'}}}}});
+}
+function renderCatBreakdown(fin){
+  const expenses=fin.filter(e=>e.type==='expense');
+  const total=expenses.reduce((s,e)=>s+Number(e.amount),0);
+  const cats={};expenses.forEach(e=>{cats[e.category]=(cats[e.category]||0)+Number(e.amount)});
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const el=document.getElementById('cat-breakdown');
+  if(!sorted.length){el.innerHTML='<div class="empty">Xarajat ma\'lumoti yo\'q.</div>';return}
+  el.innerHTML=sorted.map(([cat,amt])=>`<div class="cat-row"><span class="cat-label">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar" style="width:${total>0?Math.round(amt/total*100):0}%"></div></div><span class="cat-val">${fmt(amt)} soʻm</span></div>`).join('');
+}
+function renderTasksChart(study,tasks){
+  if(tChart)tChart.destroy();
+  tChart=new Chart(document.getElementById('tasks-chart').getContext('2d'),{type:'doughnut',data:{labels:["O'quv (bajarildi)","O'quv (qoldi)",'Shaxsiy (bajarildi)','Shaxsiy (qoldi)'],datasets:[{data:[study.filter(t=>t.done).length,study.filter(t=>!t.done).length,tasks.filter(t=>t.done).length,tasks.filter(t=>!t.done).length],backgroundColor:['#993556','rgba(153,53,86,0.22)','#D4537E','rgba(212,83,126,0.22)'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{font:{family:'DM Sans',size:12},boxWidth:12}}}}});
+}
+async function renderHistory(){
+  const list=document.getElementById('hist-list');
+  list.innerHTML='<div class="empty">Yuklanmoqda...</div>';
+  const since=sinceDate();
+  if(tab==='finance'){
+    const{data}=await sb.from('aiman_finances').select('*').eq('user_id',UID).gte('date',since).order('date',{ascending:false});
+    const fin=data||[];
+    if(!fin.length){list.innerHTML='<div class="empty">Yozuvlar yo\'q.</div>';return}
+    list.innerHTML=fin.map(e=>`<div class="hist-entry"><div class="hist-dot ${e.type}"></div><div class="hist-info"><div class="hist-title">${e.description||e.category}</div><div class="hist-meta">${e.category} · ${e.date}</div></div><span class="hist-right ${e.type}">${e.type==='income'?'+':'-'}${fmt(e.amount)} soʻm</span></div>`).join('');
+  }else if(tab==='study'){
+    const{data}=await sb.from('aiman_study_tasks').select('*').eq('user_id',UID).order('created_at',{ascending:false});
+    const items=data||[];
+    if(!items.length){list.innerHTML='<div class="empty">O\'quv vazifalari yo\'q.</div>';return}
+    list.innerHTML=items.map(t=>`<div class="hist-entry"><div class="hist-dot ${t.done?'done':'pending'}"></div><div class="hist-info"><div class="hist-title">${t.title}</div><div class="hist-meta">${t.subject||''}${t.duration?' · '+t.duration+' daq.':''}${t.date?' · '+t.date:''}</div></div><span class="hist-right ${t.done?'done':'pending'}">${t.done?'Bajarildi':'Qoldi'}</span></div>`).join('');
+  }else{
+    const{data}=await sb.from('aiman_personal_tasks').select('*').eq('user_id',UID).order('created_at',{ascending:false});
+    const items=data||[];
+    if(!items.length){list.innerHTML='<div class="empty">Shaxsiy vazifalar yo\'q.</div>';return}
+    list.innerHTML=items.map(t=>`<div class="hist-entry"><div class="hist-dot ${t.done?'done':'pending'}"></div><div class="hist-info"><div class="hist-title">${t.title}</div><div class="hist-meta">${t.category||''}${t.date?' · '+t.date:''}</div></div><span class="hist-right ${t.done?'done':'pending'}">${t.done?'Bajarildi':'Qoldi'}</span></div>`).join('');
+  }
+}
+renderAll();
+</script>
+</body>
+</html>
